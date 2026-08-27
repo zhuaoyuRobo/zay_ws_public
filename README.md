@@ -78,6 +78,24 @@ also disabled by default, and the included command limits are deliberately
 slow demonstration values. They are not a substitute for platform-specific
 calibration, independent emergency-stop hardware, or controlled validation.
 
+## Public reproduction parameters
+
+The tracked ROS 2 profile records the non-sensitive integration, watchdog,
+filtering, scan-projection, target-following, and command-limit parameters:
+
+```bash
+PARAMS="$(ros2 pkg prefix isaac_go2_nav2)/share/isaac_go2_nav2/config/public_reproduction.yaml"
+ros2 run isaac_go2_nav2 cmd_vel_limiter \
+  --ros-args --params-file "${PARAMS}"
+```
+
+The same profile can be passed to another named node in the file, for example
+`fastlio_nav2_odom_filter`, `stage2_pointcloud_to_laserscan`, or
+`go2w_cmd_vel_bridge`. It complements the existing Nav2 and FAST-LIO YAML
+files; it does not contain a map, policy checkpoint, sensor address, or real
+hardware calibration. The Go2W bridge remains disabled until explicitly
+enabled in a local, untracked configuration.
+
 ## Before publishing a fork
 
 Run the local audit and inspect the result:

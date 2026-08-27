@@ -1,0 +1,132 @@
+# Public, non-sensitive reproduction profile for simulation and public data.
+#
+# This profile intentionally contains no robot or LiDAR address, credential,
+# serial number, site map, policy path, model weight, or hardware calibration.
+# Keep those values in config/private/ or another ignored local file.
+
+cmd_vel_limiter:
+  ros__parameters:
+    use_sim_time: true
+    input_topic: "/cmd_vel_raw"
+    output_topic: "/cmd_vel"
+    max_linear_x: 0.05
+    max_linear_y: 0.0
+    max_angular_z: 0.15
+
+go2w_cmd_vel_bridge:
+  ros__parameters:
+    use_sim_time: true
+    input_topic: "/cmd_vel"
+    output_topic: "/go2w/cmd_vel"
+
+    # Hardware output and reverse motion remain disabled by default.
+    enable_output: false
+    allow_reverse: false
+    command_timeout: 0.50
+    publish_rate: 10.0
+    max_linear_x: 0.05
+    max_linear_y: 0.0
+    max_angular_z: 0.15
+    deadband_linear: 0.02
+    deadband_angular: 0.05
+
+cmd_vel_odom_simulator:
+  ros__parameters:
+    use_sim_time: true
+    cmd_vel_topic: "/cmd_vel"
+    odom_topic: "/odom"
+    odom_frame: "odom"
+    base_frame: "base_link"
+    rate: 30.0
+    cmd_timeout: 0.6
+    publish_tf: true
+    pause_when_external_odom: true
+
+odom_tf_broadcaster:
+  ros__parameters:
+    use_sim_time: true
+    odom_topic: "/odom"
+    odom_frame: "odom"
+    base_frame: "base_link"
+    flatten_to_2d: true
+
+odom_to_imu:
+  ros__parameters:
+    use_sim_time: true
+    odom_topic: "/odom"
+    imu_topic: "/imu"
+    imu_frame: "imu_link"
+
+fastlio_nav2_odom_filter:
+  ros__parameters:
+    use_sim_time: true
+    input_odom_topic: "/Odometry"
+    output_odom_topic: "/Odometry_nav2"
+    odom_frame: "camera_init"
+    nav_base_frame: "body_nav"
+
+    # No map is bundled. Supplying a map remains a local runtime choice.
+    map_yaml: ""
+    initial_x: -6.0
+    initial_y: -4.0
+    initial_yaw: 0.0
+    truth_initial_x: -6.0
+    truth_initial_y: -4.0
+    truth_initial_yaw: 0.0
+    map_margin: 0.15
+    reject_out_of_map: true
+
+    max_abs_z: 0.8
+    max_abs_roll_pitch: 0.8
+    max_linear_speed: 1.5
+    max_angular_speed: 3.0
+    reject_non_monotonic_timestamps: true
+    max_timestamp_gap: -1.0
+    max_position_jump: 0.75
+    max_yaw_jump: 0.75
+    publish_last_on_reject: true
+    stamp_mode: "now"
+    publish_tf: true
+    derive_twist: true
+
+    # Ground-truth comparison is off in the public profile.
+    truth_odom_topic: ""
+    truth_warn_distance: 0.25
+    truth_warn_yaw: 0.15
+    truth_log_period: 2.0
+
+stage2_pointcloud_to_laserscan:
+  ros__parameters:
+    use_sim_time: true
+    target_frame: "body"
+    transform_tolerance: 0.10
+    use_tf: true
+    stamp_mode: "cloud"
+    min_height: 0.05
+    max_height: 0.85
+    angle_min: -3.14159265359
+    angle_max: 3.14159265359
+    angle_increment: 0.00872664626
+    scan_time: 0.10
+    range_min: 0.30
+    range_max: 12.0
+    use_inf: true
+    inf_epsilon: 1.0
+    self_filter_enabled: true
+    self_filter_min_x: -0.45
+    self_filter_max_x: 0.45
+    self_filter_min_y: -0.32
+    self_filter_max_y: 0.32
+
+person_target_follower:
+  ros__parameters:
+    use_sim_time: true
+    target_topic: "/person_pose"
+    target_frame: ""
+    goal_frame: "map"
+    follow_distance: 2.0
+    update_rate: 0.5
+    target_timeout: 1.0
+    resend_period: 4.0
+    min_goal_update_distance: 0.5
+    goal_yaw_mode: "target"
