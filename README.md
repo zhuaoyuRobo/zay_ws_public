@@ -4,7 +4,7 @@ This repository is a public, real world  ROS 2 workspace for integrating
 a Go2-class mobile robot with FAST-LIO, point-cloud localization, Nav2, and an
 optional learned locomotion controller.
 
-The public tree contains algorithm code and generic interfaces only. It does
+The public tree contains algorithm code and generic interfaces，related yaml parameters only. It does
 not contain laboratory identities, host addresses, device serials, real-world
 maps, recorded data, policy weights, vendor SDK binaries, or calibrated robot
 parameters.
