@@ -1,6 +1,6 @@
 # Go2-Class ROS 2 Navigation Workspace
 
-This repository is a public, simulation-first ROS 2 workspace for integrating
+This repository is a public, real world  ROS 2 workspace for integrating
 a Go2-class mobile robot with FAST-LIO, point-cloud localization, Nav2, and an
 optional learned locomotion controller.
 
