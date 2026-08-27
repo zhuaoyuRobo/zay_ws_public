@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+
+<robot name="go2_description" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:include filename="$(find go2_description)/urdf/go2_description.urdf"/>
+
+    <!-- Nav2-only lidar frame/sensor for Gazebo Classic.
+         This does not touch rl_sar's joint order, inertia, ros2_control
+         interfaces, policy inputs, or effort controller. -->
+    <link name="base_laser">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.001"/>
+        <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.025" length="0.03"/>
+        </geometry>
+        <material name="nav_laser_black">
+          <color rgba="0.02 0.02 0.02 1"/>
+        </material>
+      </visual>
+    </link>
+
+    <joint name="base_laser_joint" type="fixed">
+      <origin xyz="0.24 0 0.12" rpy="0 0 0"/>
+      <parent link="trunk"/>
+      <child link="base_laser"/>
+    </joint>
+
+    <gazebo reference="base_laser">
+      <sensor name="nav_laser" type="ray">
+        <always_on>true</always_on>
+        <visualize>true</visualize>
+        <update_rate>10</update_rate>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>720</samples>
+              <resolution>1</resolution>
+              <min_angle>-3.14159265359</min_angle>
+              <max_angle>3.14159265359</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>0.08</min>
+            <max>8.0</max>
+            <resolution>0.01</resolution>
+          </range>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.005</stddev>
+          </noise>
+        </ray>
+        <plugin name="go2_nav_laser" filename="libgazebo_ros_ray_sensor.so">
+          <ros>
+            <remapping>~/out:=/scan</remapping>
+          </ros>
+          <output_type>sensor_msgs/LaserScan</output_type>
+          <frame_name>base_laser</frame_name>
+        </plugin>
+      </sensor>
+    </gazebo>
+
+    <xacro:include filename="$(find go2_description)/xacro/gazebo.xacro"/>
+
+</robot>

@@ -1,0 +1,15 @@
+// Livox custom point cloud format.
+
+module livox_ros_driver2 {
+  module msg {
+    struct CustomPoint {
+      uint32 offset_time;
+      float x;
+      float y;
+      float z;
+      uint8 reflectivity;
+      uint8 tag;
+      uint8 line;
+    };
+  };
+};

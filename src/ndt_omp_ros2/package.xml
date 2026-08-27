@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ndt_omp_ros2</name>
+  <version>0.1.0</version>
+  <description>OpenMP boosted NDT and GICP algorithms (ROS 2 port)</description>
+
+  <maintainer email="rsasaki0109@gmail.com">Ryohei Sasaki</maintainer>
+  <author email="koide@aisl.cs.tut.ac.jp">koide</author>
+
+  <license>BSD-2-Clause</license>
+
+  <url type="website">https://github.com/rsasaki0109/ndt_omp_ros2#readme</url>
+  <url type="repository">https://github.com/rsasaki0109/ndt_omp_ros2</url>
+  <url type="bugtracker">https://github.com/rsasaki0109/ndt_omp_ros2/issues</url>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>libpcl-all-dev</depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

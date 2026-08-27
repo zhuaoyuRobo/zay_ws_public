@@ -1,0 +1,15 @@
+module fast_lio {
+  module msg {
+    typedef double double__3[3];
+    typedef double double__9[9];
+
+    struct Pose6D {
+      double offset_time;
+      double__3 acc;
+      double__3 gyr;
+      double__3 vel;
+      double__3 pos;
+      double__9 rot;
+    };
+  };
+};

@@ -1,0 +1,50 @@
+# ROS and build products
+/build/
+/install/
+/log/
+/devel/
+
+# Python and tooling
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Private configuration and environment files
+.env
+.env.*
+!.env.example
+config/private/*
+!config/private/README.md
+*.local.yaml
+*.local.yml
+*.secret.*
+
+# Robot and experiment artifacts
+maps/
+bags/
+datasets/
+records/
+checkpoints/
+models/
+*.bag
+*.db3
+*.mcap
+*.pcd
+*.ply
+*.posegraph
+*.pgm
+*.pt
+*.pth
+*.onnx
+*.engine
+*.log
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

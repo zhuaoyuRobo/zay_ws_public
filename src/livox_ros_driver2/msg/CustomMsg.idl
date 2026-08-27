@@ -1,0 +1,17 @@
+#include "livox_ros_driver2/msg/CustomPoint.idl"
+#include "std_msgs/msg/Header.idl"
+
+module livox_ros_driver2 {
+  module msg {
+    typedef uint8 uint8__3[3];
+
+    struct CustomMsg {
+      std_msgs::msg::Header header;
+      uint64 timebase;
+      uint32 point_num;
+      uint8 lidar_id;
+      uint8__3 rsvd;
+      sequence<livox_ros_driver2::msg::CustomPoint> points;
+    };
+  };
+};

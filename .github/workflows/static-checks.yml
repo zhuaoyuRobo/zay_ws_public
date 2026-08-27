@@ -1,0 +1,16 @@
+name: Static checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: python -m compileall -q src
+      - run: bash -n scripts/build_workspace.sh scripts/audit_public_tree.sh

@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/rsasaki0109/ndt_omp_ros2/humble/schemas/bloom-release-v1.schema.json",
+  "title": "ndt_omp_ros2 Bloom release evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "schema_uri",
+    "status",
+    "started_at",
+    "finished_at",
+    "duration_sec",
+    "ros_distro",
+    "os_name",
+    "os_version",
+    "source",
+    "executions",
+    "deb",
+    "checks"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "schema_uri": {
+      "const": "https://raw.githubusercontent.com/rsasaki0109/ndt_omp_ros2/humble/schemas/bloom-release-v1.schema.json"
+    },
+    "status": {
+      "enum": ["passed", "failed"]
+    },
+    "started_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "finished_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "duration_sec": {
+      "type": "number",
+      "minimum": 0
+    },
+    "ros_distro": {
+      "enum": ["humble", "jazzy"]
+    },
+    "os_name": {
+      "const": "ubuntu"
+    },
+    "os_version": {
+      "enum": ["jammy", "noble"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "dirty", "package_name", "package_version"],
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "dirty": {
+          "type": "boolean"
+        },
+        "package_name": {
+          "const": "ndt_omp_ros2"
+        },
+        "package_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        }
+      }
+    },
+    "executions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bloom_generate", "dependency_check", "debian_build"],
+      "properties": {
+        "bloom_generate": {
+          "$ref": "#/$defs/execution"
+        },
+        "dependency_check": {
+          "$ref": "#/$defs/execution"
+        },
+        "debian_build": {
+          "$ref": "#/$defs/execution"
+        }
+      }
+    },
+    "deb": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "filename",
+            "sha256",
+            "size_bytes",
+            "package",
+            "version",
+            "architecture",
+            "depends"
+          ],
+          "properties": {
+            "filename": {
+              "type": "string",
+              "pattern": "^ros-(humble|jazzy)-ndt-omp-ros2_.*\\.deb$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "size_bytes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "package": {
+              "type": "string",
+              "pattern": "^ros-(humble|jazzy)-ndt-omp-ros2$"
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "architecture": {
+              "type": "string",
+              "minLength": 1
+            },
+            "depends": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 11,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "passed", "observed"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "observed": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "ros_distro": {
+            "const": "humble"
+          }
+        },
+        "required": ["ros_distro"]
+      },
+      "then": {
+        "properties": {
+          "os_version": {
+            "const": "jammy"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ros_distro": {
+            "const": "jazzy"
+          }
+        },
+        "required": ["ros_distro"]
+      },
+      "then": {
+        "properties": {
+          "os_version": {
+            "const": "noble"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exit_code", "duration_sec", "log", "log_sha256"],
+      "properties": {
+        "exit_code": {
+          "type": "integer"
+        },
+        "duration_sec": {
+          "type": "number",
+          "minimum": 0
+        },
+        "log": {
+          "type": "string",
+          "minLength": 1
+        },
+        "log_sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,247 @@
+# Interfaces
+
+## Stable Boundary
+
+- `repo/src/` and `repo/include/` remain the runtime core.
+- `repo/experiments/` is discardable space for competing implementations.
+- promotion rule: only the winning behavior graduates into core, never the whole experiment scaffold.
+
+## Borderline Measurement Gate
+
+Reject truly bad borderline measurements without regressing clean short-gap updates.
+
+### Minimal Interface
+
+- `reset() -> None`
+- `step(sample: GateSample) -> GateDecision`
+
+### `GateSample` fields
+
+- `index`
+- `fitness_score`
+- `effective_score_threshold`
+- `seed_translation_since_accept_m`
+- `consecutive_rejected_updates`
+
+### `GateDecision` fields
+
+- `reject_measurement`
+- `reason`
+- `score`
+
+### Shared Fixtures
+
+- `clean_borderline_should_pass`: Distilled 30 s style case. Borderline fitness with a clean seed should still pass; a global 5.5 threshold is too strict here.
+- `clear_good`: Real Istanbul accepted sample. Even with a large seed drift, a clearly good measurement should pass.
+- `clear_over_threshold`: Real Istanbul sample with fitness clearly over the effective threshold. Every sane gate should reject it.
+- `drifted_borderline_bad`: Real Istanbul borderline sample. Fitness is below 6.0 but the seed has already drifted far from the last accepted pose, so the measurement should be rejected.
+- `post_reject_low_seed_should_pass`: Distilled short-gap replay case. Recent rejects alone are not enough to justify strict gating when the seed is still close to the last accepted pose.
+
+### Candidate Families
+
+- `seed_conditioned_borderline`: seed-aware rule table
+- `post_reject_strict`: state-escalation rule table
+- `fixed_threshold_55`: functional fixed threshold
+
+
+## IMU Correction Guard
+
+Disable the IMU-preintegration path early enough to avoid poisoning localization, without false positives on no-IMU traces.
+
+### Minimal Interface
+
+- `reset() -> None`
+- `step(sample: GuardSample) -> GuardDecision`
+
+### `GuardSample` fields
+
+- `index`
+- `status`
+- `fitness_score`
+- `alignment_time_sec`
+- `imu_prediction_active`
+- `consecutive_rejected_updates`
+- `seed_translation_since_accept_m`
+- `seed_yaw_since_accept_deg`
+- `accepted_gap_sec`
+- `correction_translation_m`
+- `correction_yaw_deg`
+
+### `GuardDecision` fields
+
+- `disable_imu_preintegration`
+- `reason`
+- `score`
+
+### Shared Fixtures
+
+- `hdl_healthy_candidate_r01`: Healthy HDL IMU-enabled trace excerpt. The guard may cut IMU around the observed divergence event, but it must not fire before sample 3.
+- `hdl_unstable_candidate_r02`: Unstable HDL IMU-enabled trace excerpt. The guard should cut IMU before the first over-threshold reject at sample 5.
+- `istanbul_no_imu`: Autoware Istanbul excerpt with no IMU activity. Any IMU guard trigger here is a false positive.
+
+### Candidate Families
+
+- `absolute_threshold`: functional threshold rule
+- `score_budget`: pipeline scorecard
+- `streak_guard`: stateful OOP streak detector
+
+
+## Multi-Criteria Measurement Acceptance
+
+Accept degraded-but-consistent registration results that the scalar fitness gate rejects, without accepting stale or contradicted measurements. Motivated by the Koide outdoor_hard_01a window where the ground-truth pose scores ~9.6 against the 6.0 gate and the scalar gate starts a 300-row reject streak.
+
+### Minimal Interface
+
+- `reset() -> None`
+- `step(sample: AcceptanceSample) -> AcceptanceDecision`
+
+### `AcceptanceSample` fields
+
+- `index`
+- `fitness_score`
+- `effective_score_threshold`
+- `correction_translation_m`
+- `correction_yaw_deg`
+- `accepted_gap_sec`
+- `consecutive_rejected_updates`
+
+### `AcceptanceDecision` fields
+
+- `reject_measurement`
+- `reason`
+- `score`
+
+### Shared Fixtures
+
+- `degraded_onset_small_correction_should_reject`: Failure-window onset: score 13.6 over the 6.0 gate with a small correction. The 2026-06-11 hypothesis was to accept this; the 2026-06-12 bounded replay falsified it: degraded accepts above fitness ~12 dragged the anchor (rotation RMSE 1.8->6.1 deg, ok rows 329->193). GT scores ~9.6 in this window, so anything above ~12 is a false maximum even when the correction is small.
+- `degraded_streak_small_correction_should_reject`: Three rejects into the window: score 26.6 with correction 0.75 m. Falsified accept-hypothesis: the 2026-06-12 bounded replay showed fit 18.7/31.9 rows with small corrections are self-confirming false maxima once a degraded accept re-anchors the prediction.
+- `fresh_jump_good_score_should_reject`: Synthetic, derived from the healthy row: a good score (1.5) whose pose jumps 25 m against a 0.4 s old prediction. An aliased match should not be accepted on score alone.
+- `healthy_tracking_should_accept`: Real healthy tracking row; every strategy must accept.
+- `lost_huge_score_should_reject`: Deep in the failure window: score 4354 with a 128 s gap. Unambiguous loss.
+- `stale_prediction_should_reject`: Fifteen rejects in, the prediction is 7.3 s old; a small correction against a stale prediction is no longer evidence.
+
+### Candidate Families
+
+- `fixed_threshold`: scalar fitness threshold (runtime baseline)
+- `bounded_degraded`: correction cross-check with non-resetting degraded-accept budget
+- `correction_conditioned`: fitness threshold + correction/staleness cross-check
+- `score_ratio_budget`: relative score cap with gap/streak budget
+
+
+## Recovery Action Selection
+
+Choose whether to keep open-loop prediction, reuse a rejected seed, or retry from the last accepted pose after a failed measurement.
+
+### Minimal Interface
+
+- `reset() -> None`
+- `step(sample: RecoverySample) -> RecoveryDecision`
+
+### `RecoverySample` fields
+
+- `index`
+- `failure_kind`
+- `fitness_score`
+- `correction_translation_m`
+- `correction_yaw_deg`
+- `seed_translation_since_accept_m`
+- `accepted_gap_sec`
+- `consecutive_rejected_updates`
+
+### `RecoveryDecision` fields
+
+- `action`
+- `reason`
+- `score`
+
+### Shared Fixtures
+
+- `long_gap_collapse_should_not_retry`: Real 180 s collapse window. Once the open-loop gap and drift have exploded, retrying from the last accepted pose should be suppressed.
+- `seed_reuse_candidate_should_not_promote`: Real 60 s borderline reject that satisfied the experimental seed-reuse rule, but later benchmarking showed seed-only reuse should not be the chosen action here.
+- `short_gap_rejected_measurement_retryable`: Distilled from the 60 s retry-success window. After a short reject streak with a bounded open-loop gap, retrying from the last accepted pose is the desired action.
+- `short_gap_target_unavailable_retryable`: Distilled short-gap local-map-crop failure. The predicted seed has drifted, but the last accepted pose is still recent enough that a retry is preferable to blind open-loop continuation.
+
+### Candidate Families
+
+- `guarded_last_pose_retry`: guarded retry rule table
+- `conservative_drop`: minimal baseline
+- `rejected_seed_reuse`: seed-reuse rule table
+
+
+## Reinitialization Trigger
+
+Decide when bounded local recovery should stop and the system should escalate to full reinitialization.
+
+### Minimal Interface
+
+- `reset() -> None`
+- `step(sample: ReinitSample) -> ReinitDecision`
+
+### `ReinitSample` fields
+
+- `index`
+- `failure_kind`
+- `fitness_score`
+- `seed_translation_since_accept_m`
+- `accepted_gap_sec`
+- `consecutive_rejected_updates`
+
+### `ReinitDecision` fields
+
+- `trigger_reinitialization`
+- `reason`
+- `score`
+
+### Shared Fixtures
+
+- `long_gap_crop_failure_should_reinit`: Real 180 s crop-collapse onset. At this point local recovery has already failed and reinitialization should be requested.
+- `long_gap_hopeless_reject_should_reinit`: Real 180 s run just before crop failure. The open-loop gap and drift have already exploded, so the system should request reinitialization even before the crop fully fails.
+- `seed_reuse_candidate_should_not_reinit`: Real 60 s borderline reject that later benchmarking marked as a bad seed-reuse direction, but still not a case for full reinitialization.
+- `short_gap_rejected_measurement_should_not_reinit`: Real 60 s retry-success window before recovery. This is still inside bounded local recovery and should not escalate to full reinitialization.
+- `short_gap_target_unavailable_should_not_reinit`: Distilled short-gap crop failure. When the last accepted pose is still recent, the system should retry locally before requesting reinitialization.
+
+### Candidate Families
+
+- `gap_streak_score_reinit`: scorecard threshold
+- `failure_kind_eager_reinit`: event-driven rule table
+- `never_reinit`: minimal baseline
+
+
+## Startup False-Convergence Integrity Monitor
+
+Detect a self-consistent but wrong NDT basin during the first five accepted updates, where scalar fitness remains healthy, without rejecting bounded Koide indoor startups.
+
+### Minimal Interface
+
+- `reset() -> None`
+- `step(sample: StartupIntegritySample) -> StartupIntegrityDecision`
+
+### `StartupIntegritySample` fields
+
+- `index`
+- `fitness_score`
+- `correction_translation_m`
+- `correction_yaw_deg`
+
+### `StartupIntegrityDecision` fields
+
+- `request_reinitialization`
+- `reason`
+- `score`
+
+### Shared Fixtures
+
+- `koide_indoor_easy_01`: Bounded Koide indoor_easy_01 startup; any trigger is a false positive.
+- `koide_indoor_easy_02`: Bounded Koide indoor_easy_02 startup with a 0.39 m first correction; it must not trigger.
+- `koide_indoor_easy_02_live_r02`: A second bounded indoor_easy_02 replay with larger startup corrections; it exposes false-trigger overfitting.
+- `koide_indoor_hard_01`: Initially bounded Koide indoor_hard_01 startup; a detector must not pre-emptively trigger.
+- `koide_indoor_kidnap_01`: Koide indoor_kidnap_01 aliases to a wrong pose despite low NDT fitness; trigger by update four.
+- `koide_indoor_kidnap_01_live_r02`: A second aliased indoor_kidnap_01 replay with bounded first-five corrections; it exposes missed detections.
+- `koide_indoor_kidnap_02`: Koide indoor_kidnap_02 diverges through moderate repeated corrections; trigger by update four.
+
+### Candidate Families
+
+- `peak_innovation`: single-update translation or yaw correction threshold
+- `cumulative_translation`: startup cumulative translation-correction budget
+- `normalized_innovation_energy`: startup normalized translation/yaw correction energy
+- `fitness_only`: scalar NDT fitness threshold
